@@ -114,14 +114,20 @@ class MainRenderer:
     def __draw_scheduled_games(self, cond):
         if self.data.current_game is None:
             return
+        # Track starting index so we know when we've shown all games
+        start_idx = self.data.schedule.current_idx
+        seen_all = False
         refresh_rate = self.data.config.scrolling_speed
-        while cond():
+        while cond() and not seen_all:
             if self.data.current_game is None:
                 return
             if self.game_changed_time < self.data.game_changed_time:
                 self.scrolling_text_pos = self.canvas.width
                 self.data.scrolling_finished = not self.data.config.rotation_scroll_until_finished
                 self.game_changed_time = time.time()
+                # Check if we've cycled back to the start
+                if self.data.schedule.current_idx == start_idx and self.data.schedule.num_games() > 1:
+                    seen_all = True
             self.__draw_game()
             time.sleep(refresh_rate)
 
