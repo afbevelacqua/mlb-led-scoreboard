@@ -33,7 +33,8 @@
 		"while_preferred_team_live": {
 			"enabled": false,
 			"during_inning_breaks": false
-		}
+		},
+		"screen_display_time": 120
 	},
 	"weather": {
 		"apikey": "YOUR_API_KEY_HERE",
@@ -48,6 +49,13 @@
 	"api_refresh_rate" : 5,
 	"pregame_weather": true,
 	"scrolling_speed": 2,
+	"forecast": {
+		"enabled": false,
+		"tomorrow_apikey": "YOUR_TOMORROW_API_KEY",
+		"location": "41.8781,-87.6298",
+		"units": "imperial",
+		"days": 3
+	},
 	"debug": false,
 	"demo_date": false
 }

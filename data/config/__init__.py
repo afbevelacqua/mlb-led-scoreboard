@@ -56,11 +56,22 @@ class Config:
         self.rotation_preferred_team_live_mid_inning = json["rotation"]["while_preferred_team_live"][
             "during_inning_breaks"
         ]
+        self.screen_display_time = json["rotation"].get("screen_display_time", 120)
+        if self.screen_display_time < 10:
+            debug.warning("screen_display_time is too low (< 10). Using default value of 120.")
+            self.screen_display_time = 120
 
         # Weather
         self.weather_apikey = json["weather"]["apikey"]
         self.weather_location = json["weather"]["location"]
         self.weather_metric_units = json["weather"]["metric_units"]
+
+        # Forecast (Tomorrow.io)
+        self.forecast_enabled = json["forecast"]["enabled"]
+        self.forecast_tomorrow_apikey = json["forecast"]["tomorrow_apikey"]
+        self.forecast_location = json["forecast"]["location"]
+        self.forecast_units = json["forecast"]["units"]
+        self.forecast_days = json["forecast"]["days"]
 
         # Misc config options
         self.time_format = json["time_format"]

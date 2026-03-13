@@ -95,6 +95,7 @@ def __refresh_news(render_thread, data):  # type: (threading.Thread, Data) -> No
         time.sleep(30)
         data.refresh_weather()
         data.refresh_news_ticker()
+        data.refresh_forecast()
 
 
 def __refresh_standings(render_thread, data):  # type: (threading.Thread, Data) -> None
@@ -114,6 +115,7 @@ def __refresh_offday(render_thread, data):  # type: (threading.Thread, Data) -> 
         data.refresh_standings()
         data.refresh_weather()
         data.refresh_news_ticker()
+        data.refresh_forecast()
 
 
 def __refresh_gameday(render_thread, data):  # type: (threading.Thread, Data) -> None
@@ -125,19 +127,24 @@ def __refresh_gameday(render_thread, data):  # type: (threading.Thread, Data) ->
         time.sleep(0.5)
         data.refresh_schedule()
         if not data.schedule.games_live():
-            cont = False
             if data.config.standings_no_games:
                 data.refresh_standings()
-                cont = True
             if data.config.news_no_games:
                 data.refresh_news_ticker()
                 data.refresh_weather()
-                cont = True
-            if cont:
-                continue
+            if data.config.forecast_enabled:
+                data.refresh_forecast()
+            # Still rotate through games for scheduled games display
+            if data.current_game is None:
+                data.advance_to_next_game()
+            if data.should_rotate_to_next_game() and data.scrolling_finished:
+                time_delta = time.time() - starttime
+                if time_delta >= data.config.rotation_rates_pregame:
+                    starttime = time.time()
+                    data.advance_to_next_game()
+            continue
 
-        elif data.current_game is None:
-            # make sure a game is populated
+        if data.current_game is None:
             data.advance_to_next_game()
 
         if data.should_rotate_to_next_game():

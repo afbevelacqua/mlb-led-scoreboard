@@ -10,6 +10,7 @@ from data.scoreboard import Scoreboard
 from data.scoreboard.postgame import Postgame
 from data.scoreboard.pregame import Pregame
 from data.standings import Standings
+from data.forecast import Forecast
 from data.update import UpdateStatus
 from data.weather import Weather
 
@@ -37,6 +38,9 @@ class Data:
 
         # Fetch all standings data for today
         self.standings: Standings = Standings(config, self.headlines.important_dates.playoffs_start_date)
+
+        # Forecast (Tomorrow.io 3-day forecast)
+        self.forecast: Forecast = Forecast(config)
 
         # Network status state - we useweather condition as a sort of sentinial value
         self.network_issues: bool = self.weather.conditions == "Error"
@@ -107,6 +111,9 @@ class Data:
 
     def refresh_news_ticker(self):
         self.__process_network_status(self.headlines.update())
+
+    def refresh_forecast(self):
+        self.__process_network_status(self.forecast.update())
 
     def refresh_schedule(self, force=False):
         self.__process_network_status(self.schedule.update(force))

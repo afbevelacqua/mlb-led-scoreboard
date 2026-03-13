@@ -7,16 +7,13 @@ from data import Data, status
 from data.scoreboard import Scoreboard
 from data.scoreboard.postgame import Postgame
 from data.scoreboard.pregame import Pregame
+from renderers import forecast as forecastrender
 from renderers import network, offday, standings
 from renderers.games import game as gamerender
 from renderers.games import irregular
 from renderers.games import postgame as postgamerender
 from renderers.games import pregame as pregamerender
 from renderers.games import teams
-
-# TODO(BMW) make configurable time?
-STANDINGS_NEWS_SWITCH_TIME = 120
-
 
 class MainRenderer:
     def __init__(self, matrix, data):
@@ -54,14 +51,29 @@ class MainRenderer:
             news = True
             standings = self.data.config.standings_mlb_offday
 
+        forecast_enabled = self.data.config.forecast_enabled
+        screen_time = self.data.config.screen_display_time
+
         if news and standings:
             while True:
-                self.__draw_news(timer_cond(STANDINGS_NEWS_SWITCH_TIME))
-                self.__draw_standings(timer_cond(STANDINGS_NEWS_SWITCH_TIME))
+                self.__draw_news(timer_cond(screen_time))
+                self.__draw_standings(timer_cond(screen_time))
+                if forecast_enabled:
+                    self.__draw_forecast(timer_cond(screen_time))
         elif news:
-            self.__draw_news(permanent_cond)
+            if forecast_enabled:
+                while True:
+                    self.__draw_news(timer_cond(screen_time))
+                    self.__draw_forecast(timer_cond(screen_time))
+            else:
+                self.__draw_news(permanent_cond)
         else:
-            self.__render_standings()
+            if forecast_enabled:
+                while True:
+                    self.__draw_standings(timer_cond(screen_time))
+                    self.__draw_forecast(timer_cond(screen_time))
+            else:
+                self.__render_standings()
 
     def __render_standings(self) -> NoReturn:
         self.__draw_standings(permanent_cond)
@@ -74,25 +86,39 @@ class MainRenderer:
     # May also call draw_offday or draw_standings if there are no games
     def __render_gameday(self) -> NoReturn:
         refresh_rate = self.data.config.scrolling_speed
+        screen_time = self.data.config.screen_display_time
         while True:
-            if not self.data.schedule.games_live():
-                if self.data.config.news_no_games and self.data.config.standings_no_games:
-                    self.__draw_news(all_of(timer_cond(STANDINGS_NEWS_SWITCH_TIME), self.no_games_cond))
-                    self.__draw_standings(all_of(timer_cond(STANDINGS_NEWS_SWITCH_TIME), self.no_games_cond))
-                    continue
-                elif self.data.config.news_no_games:
-                    self.__draw_news(self.no_games_cond)
-                elif self.data.config.standings_no_games:
-                    self.__draw_standings(self.no_games_cond)
+            if self.data.schedule.games_live():
+                # Mode B: only game cards
+                if self.game_changed_time < self.data.game_changed_time:
+                    self.scrolling_text_pos = self.canvas.width
+                    self.data.scrolling_finished = not self.data.config.rotation_scroll_until_finished
+                    self.game_changed_time = time.time()
+                self.__draw_game()
+                time.sleep(refresh_rate)
+            else:
+                # Mode A: cycle through enabled screens
+                screens = []
+                screens.append(self.__draw_scheduled_games)
+                if self.data.config.news_no_games:
+                    screens.append(self.__draw_news)
+                if self.data.config.standings_no_games:
+                    screens.append(self.__draw_standings)
+                if self.data.config.forecast_enabled:
+                    screens.append(self.__draw_forecast)
+                for draw_fn in screens:
+                    if self.data.schedule.games_live():
+                        break
+                    draw_fn(all_of(timer_cond(screen_time), self.no_games_cond))
 
+    def __draw_scheduled_games(self, cond):
+        refresh_rate = self.data.config.scrolling_speed
+        while cond():
             if self.game_changed_time < self.data.game_changed_time:
                 self.scrolling_text_pos = self.canvas.width
                 self.data.scrolling_finished = not self.data.config.rotation_scroll_until_finished
                 self.game_changed_time = time.time()
-
-            # Draw the current game
             self.__draw_game()
-
             time.sleep(refresh_rate)
 
     # Draws the provided game on the canvas
@@ -251,6 +277,34 @@ class MainRenderer:
 
             time.sleep(1)
             update = (update + 1) % 100
+
+    def __draw_forecast(self, cond: Callable[[], bool]):
+        """
+        Draw the forecast screen for as long as cond returns True
+        """
+        if not self.data.forecast.available():
+            return
+
+        forecast_days = self.data.forecast.get_forecast_days()
+        if not forecast_days:
+            return
+
+        while cond():
+            color = self.data.config.scoreboard_colors.color("default.background")
+            self.canvas.Fill(color["r"], color["g"], color["b"])
+
+            forecastrender.render_forecast(
+                self.canvas,
+                self.data.config.layout,
+                self.data.config.scoreboard_colors,
+                forecast_days,
+            )
+
+            if self.data.network_issues:
+                network.render_network_error(self.canvas, self.data.config.layout, self.data.config.scoreboard_colors)
+
+            self.canvas = self.matrix.SwapOnVSync(self.canvas)
+            time.sleep(1)
 
     def __max_scroll_x(self, scroll_coords):
         scroll_max_x = scroll_coords["x"] + scroll_coords["width"]
