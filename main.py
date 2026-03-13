@@ -41,11 +41,11 @@ def main(matrix, config_base):
     logger = logging.getLogger("mlbled")
     if config.debug:
         logger.setLevel(logging.DEBUG)
+        if config.debug == "with-statsapi":
+            # Assign the scoreboard logger to statsapi
+            statsapi.logger = logger
     else:
         logger.setLevel(logging.WARNING)
-
-    # Assign the scoreboard logger to statsapi
-    statsapi.logger = logger
 
     # Print some basic info on startup
     debug.info("%s - v%s (%sx%s)", SCRIPT_NAME, SCRIPT_VERSION, matrix.width, matrix.height)
@@ -158,16 +158,14 @@ def __refresh_gameday(render_thread, data):  # type: (threading.Thread, Data) ->
             data.refresh_game()
 
 
-
-
 def __render_main(matrix, data):
     MainRenderer(matrix, data).render()
 
 
 if __name__ == "__main__":
     # Check for led configuration arguments
-    command_line_args = args()
-    matrixOptions = led_matrix_options(command_line_args)
+    clargs = args()
+    matrixOptions = led_matrix_options(clargs)
 
     if driver.is_emulated():
         matrixOptions.emulator_title = f"{SCRIPT_NAME} v{SCRIPT_VERSION}"
@@ -176,8 +174,7 @@ if __name__ == "__main__":
     # Initialize the matrix
     matrix = RGBMatrix(options=matrixOptions)
     try:
-        config, _ = os.path.splitext(command_line_args.config)
-        main(matrix, config)
+        main(matrix, clargs.config)
     except:
         debug.exception("Untrapped error in main!")
         sys.exit(1)
