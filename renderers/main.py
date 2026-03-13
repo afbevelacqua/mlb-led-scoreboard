@@ -112,8 +112,12 @@ class MainRenderer:
                     draw_fn(all_of(timer_cond(screen_time), self.no_games_cond))
 
     def __draw_scheduled_games(self, cond):
+        if self.data.current_game is None:
+            return
         refresh_rate = self.data.config.scrolling_speed
         while cond():
+            if self.data.current_game is None:
+                return
             if self.game_changed_time < self.data.game_changed_time:
                 self.scrolling_text_pos = self.canvas.width
                 self.data.scrolling_finished = not self.data.config.rotation_scroll_until_finished
