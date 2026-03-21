@@ -39,7 +39,7 @@ def __render_clock(canvas, layout, colors, time_format):
 def __render_weather(canvas, layout, colors, weather):
     if weather.available():
         image_file = weather.icon_filename()
-        weather_icon = Image.open(image_file)
+        weather_icon = Image.open(image_file).convert("RGBA")
         __render_weather_icon(canvas, layout, colors, weather_icon)
         __render_weather_text(canvas, layout, colors, weather.conditions, "conditions")
         __render_weather_text(canvas, layout, colors, weather.temperature_string(), "temperature")
