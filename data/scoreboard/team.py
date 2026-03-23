@@ -28,5 +28,5 @@ class Team:
             return default_colors | colors
 
         except KeyError:
-            debug.exception("No color found for team: {}".format(self.abbrev))
+            debug.warning("No color found for team: {} — using defaults".format(self.abbrev))
             return default_colors

@@ -27,6 +27,7 @@ _SPECIAL_TEAMS = {
     940: { "abbr": "USA", "name": "United States" },
     944: { "abbr": "VEN", "name": "Venezuela" },
     1171: {"abbr": "KOR", "name": "Korea" },
+    260:  {"abbr": "SUG", "name": "Sugar Land Space Cowboys" },
 }
 
 # Run this file to retreive the latest team data from the MLB API.
