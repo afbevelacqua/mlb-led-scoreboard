@@ -15,7 +15,8 @@ class Pregame:
 
         try:
             self.start_time = self.__convert_time(game.datetime())
-        except:
+        except Exception:
+            debug.exception("Failed to compute pregame start_time, falling back to TBD")
             self.start_time = "TBD"
 
         self.status = game.status()
