@@ -14,6 +14,17 @@ if statsapi_version < (1, 9, 0):
     debug.error("We require MLB-StatsAPI 1.9.0 or higher. You may need to re-run install.sh")
     sys.exit(1)
 
+# Default timeout for all outbound HTTP requests (statsapi has none by default,
+# so a hung MLB API socket can wedge the refresh thread indefinitely).
+import requests as _requests
+_DEFAULT_HTTP_TIMEOUT = (5, 10)  # (connect, read) seconds
+_orig_session_request = _requests.Session.request
+def _session_request_with_timeout(self, method, url, **kwargs):
+    if kwargs.get("timeout") is None:
+        kwargs["timeout"] = _DEFAULT_HTTP_TIMEOUT
+    return _orig_session_request(self, method, url, **kwargs)
+_requests.Session.request = _session_request_with_timeout
+
 import logging
 import os
 import threading
